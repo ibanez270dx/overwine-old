@@ -1,0 +1,26 @@
+upstream overwine {
+  # path to Unicorn sock file:
+  server unix:/srv/overwine.io/tmp/unicorn.sock fail_timeout=0;
+}
+
+server {
+  listen 80;
+  root /srv/overwine.io/public;
+
+  server_name www.overwine.io overwine.io;
+  try_files $uri/index.html $uri @overwine;
+
+  access_log /var/log/nginx/overwine_access.log combined;
+  error_log /var/log/nginx/overwine_error.log;
+
+  location @overwine {
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header Host $http_host;
+    proxy_redirect off;
+    proxy_pass http://overwine;
+  }
+
+  error_page 500 502 503 504 /500.html;
+  client_max_body_size 4G;
+  keepalive_timeout 10;
+}
